@@ -1,6 +1,6 @@
 module Churn
 
-  #analizes Bzr / Bazaar SCM to find recently changed files, and what lines have been altered
+  #analyzes Perforce SCM to find recently changed files, and what lines have been altered
   class P4Analyzer < SourceControl
     def get_logs
     end
