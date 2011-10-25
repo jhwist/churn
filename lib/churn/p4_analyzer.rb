@@ -8,6 +8,42 @@ module Churn
     def get_revisions
     end
 
+    def changes(commit_range = "")
+      p4_list_changes.each_line.map do |change|
+        change.match(/Change (\d+)/)[1]
+      end
+    end
+
+    def files_per_change(change)
+      describe_output = p4_describe_change(change).split("\n")
+      map = []
+      describe_output.each_index do |index|
+        if describe_output[index].start_with?("====")
+          fn = depot_to_local(describe_output[index].match(/==== (\/\/.*)#\d+/)[1])
+          churn = sum_of_changes(describe_output[index .. index + 4].join("\n"))
+          map << [churn,fn]
+        end
+      end
+      return map
+    end
+
+    def sum_of_changes(p4_describe_output)
+      churn = 0
+      p4_describe_output.each_line do |line|
+        next unless line =~ /(add|deleted|changed) .* (\d+) lines/
+          churn += line.match(/(\d+) lines/)[1].to_i
+      end
+      return churn
+    end
+
+    def depot_to_local(depot_file)
+      abs_path =  p4_fstat(depot_file).each_line.select {
+        |line| line =~ /clientFile/
+      }[0].split(" ")[2].tr("\\","/")
+      Pathname.new(abs_path).relative_path_from(Pathname.new(FileUtils.pwd)).to_s
+    end
+
+
     private
 
     def get_diff(revision, previous_revision)
@@ -22,6 +58,14 @@ module Churn
 
     def get_recent_file(line)
       super(line).split("\t")[0]
+    end
+
+    def p4_list_changes 
+      `p4 changes -s submitted`
+    end
+
+    def p4_describe_change(change)
+      `p4 describe -ds #{change}`
     end
 
   end
