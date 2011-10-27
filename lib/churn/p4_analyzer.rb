@@ -2,14 +2,19 @@ module Churn
 
   #analyzes Perforce SCM to find recently changed files, and what lines have been altered
   class P4Analyzer < SourceControl
+
     def get_logs
     end
 
     def get_revisions
     end
 
-    def changes(commit_range = "")
-      p4_list_changes.each_line.map do |change|
+    def changes(start_date = "")
+      rev_range = ""
+      if not start_date == ""
+        rev_range = "#{start_date},#{Time.now.strftime("%Y/%m/%d")}"
+      end
+      p4_list_changes(rev_range).each_line.map do |change|
         change.match(/Change (\d+)/)[1]
       end
     end
@@ -20,8 +25,8 @@ module Churn
       describe_output.each_index do |index|
         if describe_output[index].start_with?("====")
           fn = depot_to_local(describe_output[index].match(/==== (\/\/.*)#\d+/)[1])
-          churn = sum_of_changes(describe_output[index .. index + 4].join("\n"))
-          map << [churn,fn]
+          #churn = sum_of_changes(describe_output[index .. index + 4].join("\n"))
+          map << fn
         end
       end
       return map
@@ -60,8 +65,8 @@ module Churn
       super(line).split("\t")[0]
     end
 
-    def p4_list_changes 
-      `p4 changes -s submitted`
+    def p4_list_changes(rev_range = "") 
+      `p4 changes -s submitted @#{rev_range}`
     end
 
     def p4_describe_change(change)
