@@ -11,6 +11,7 @@ require 'git_analyzer'
 require 'svn_analyzer'
 require 'hg_analyzer'
 require 'bzr_analyzer'
+require 'p4_analyzer'
 require 'location_mapping'
 require 'churn_history'
 
@@ -148,8 +149,10 @@ module Churn
           BzrAnalyzer.new(start_date)
       elsif File.exist?(".svn")
         SvnAnalyzer.new(start_date)
+      elsif not ENV["P4CLIENT"].nil?
+        P4Analyzer.new(start_date)
       else
-        raise "Churning requires a bazaar, git, mercurial, or subversion repo"
+        raise "Churning requires a bazaar, git, mercurial, Perforce or subversion repo"
       end
     end
 
